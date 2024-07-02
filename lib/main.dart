@@ -1,109 +1,46 @@
-import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_application_1/firebase_options.dart';
 
-void main() {
-  runApp(const QuoteGptAppGet());
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
+  runApp(const BasicCrudApp());
 }
 
-class QuoteGptAppGet extends StatelessWidget {
-  const QuoteGptAppGet({super.key});
+addQuote() {
+  final db = FirebaseFirestore.instance;
+  final data = {"text": "quote text", "author": "author name"};
+  db.collection("quotes").add(data).then((documentSnapshot) =>
+      print("Added Data with ID: ${documentSnapshot.id}"));
+}
+
+class BasicCrudApp extends StatelessWidget {
+  const BasicCrudApp({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return const MaterialApp(
-      home: QuotesScreen(),
-    );
-  }
-}
-
-class QuotesScreen extends StatefulWidget {
-  const QuotesScreen({super.key});
-
-  @override
-  QuotesScreenState createState() => QuotesScreenState();
-}
-
-class QuotesScreenState extends State<QuotesScreen> {
-  List<Quote> _quotes = [];
-
-  bool _isLoading = true;
-
-  @override
-  void initState() {
-    super.initState();
-
-    _fetchQuotes();
-  }
-
-  Future<void> _fetchQuotes() async {
-    try {
-      QuerySnapshot snapshot =
-          await FirebaseFirestore.instance.collection('quotes').get();
-
-      setState(() {
-        _quotes = snapshot.docs.map((doc) {
-          final data = doc.data() as Map<String, dynamic>;
-
-          return Quote(
-            id: doc.id,
-            text: data['text'],
-            author: data['author'],
-          );
-        }).toList();
-
-        _isLoading = false;
-      });
-    } catch (e) {
-      print('Error fetching quotes: $e');
-
-      setState(() {
-        _isLoading = false;
-      });
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Quotes')),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : ListView.builder(
-              itemCount: _quotes.length,
-              itemBuilder: (context, index) {
-                final quote = _quotes[index];
-
-                return ListTile(
-                  title: Text(quote.text),
-                  subtitle: Text(quote.author),
-                );
-              },
+    return MaterialApp(
+        home: Scaffold(
+            appBar: AppBar(
+              title: const Text('Provider Example'),
+              backgroundColor: Colors.blue,
+              foregroundColor: Colors.white,
             ),
-    );
-  }
-}
-
-class Quote {
-  final String id;
-
-  final String text;
-
-  final String author;
-
-  Quote({required this.id, required this.text, required this.author});
-
-  factory Quote.fromJson(Map<String, dynamic> json, String id) {
-    return Quote(
-      id: id,
-      text: json['text'],
-      author: json['author'],
-    );
-  }
-
-  Map<String, dynamic> toJson() {
-    return {
-      'text': text,
-      'author': author,
-    };
+            body: Center(
+                child: Column(
+              children: [
+                ElevatedButton(
+                    onPressed: () => {addQuote()},
+                    child: const Text('Add Quote')),
+                ElevatedButton(
+                    onPressed: () => {}, child: const Text('Get Quote')),
+                ElevatedButton(
+                    onPressed: () => {}, child: const Text('Delete Quote'))
+              ],
+            ))));
   }
 }
