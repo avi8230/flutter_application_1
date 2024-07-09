@@ -281,35 +281,53 @@ class ManageQuotes extends StatelessWidget {
   void _editQuote(BuildContext context, String id, String text, String author) {
     TextEditingController textController = TextEditingController(text: text);
     TextEditingController authorController = TextEditingController(text: author);
+    final _formKey = GlobalKey<FormState>();
     showDialog(
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
           title: Text('Edit Quote'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: textController,
-                decoration: InputDecoration(labelText: 'Quote'),
-              ),
-              TextField(
-                controller: authorController,
-                decoration: InputDecoration(labelText: 'Author'),
-              ),
-            ],
+          content: Form(
+            key: _formKey,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextFormField(
+                  controller: textController,
+                  decoration: InputDecoration(labelText: 'Quote'),
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Please enter some text';
+                    }
+                    return null;
+                  },
+                ),
+                TextFormField(
+                  controller: authorController,
+                  decoration: InputDecoration(labelText: 'Author'),
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Please enter an author';
+                    }
+                    return null;
+                  },
+                ),
+              ],
+            ),
           ),
           actions: [
             ElevatedButton(
               onPressed: () {
-                FirebaseFirestore.instance
-                    .collection('quotes')
-                    .doc(id)
-                    .update({
-                  'text': textController.text,
-                  'author': authorController.text,
-                });
-                Navigator.of(context).pop();
+                if (_formKey.currentState!.validate()) {
+                  FirebaseFirestore.instance
+                      .collection('quotes')
+                      .doc(id)
+                      .update({
+                    'text': textController.text,
+                    'author': authorController.text,
+                  });
+                  Navigator.of(context).pop();
+                }
               },
               child: Text('Save'),
             ),
