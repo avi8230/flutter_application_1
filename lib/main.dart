@@ -104,28 +104,57 @@ class _DisplayQuotesState extends State<DisplayQuotes> {
           return Text("Loading");
         }
 
-        return PageView(
-          controller: _pageController,
-          children: snapshot.data!.docs.map((DocumentSnapshot document) {
-            Map<String, dynamic> data =
-                document.data()! as Map<String, dynamic>;
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    data['text'],
-                    style: TextStyle(fontSize: 24),
-                  ),
-                  SizedBox(height: 10),
-                  Text(
-                    data['author'],
-                    style: TextStyle(fontSize: 18, color: Colors.grey),
-                  ),
-                ],
+        return Column(
+          children: [
+            Expanded(
+              child: PageView(
+                controller: _pageController,
+                children: snapshot.data!.docs.map((DocumentSnapshot document) {
+                  Map<String, dynamic> data =
+                      document.data()! as Map<String, dynamic>;
+                  return Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          data['text'],
+                          style: TextStyle(fontSize: 24),
+                        ),
+                        SizedBox(height: 10),
+                        Text(
+                          data['author'],
+                          style: TextStyle(fontSize: 18, color: Colors.grey),
+                        ),
+                      ],
+                    ),
+                  );
+                }).toList(),
               ),
-            );
-          }).toList(),
+            ),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                IconButton(
+                  icon: Icon(Icons.arrow_back),
+                  onPressed: () {
+                    _pageController.previousPage(
+                      duration: Duration(milliseconds: 300),
+                      curve: Curves.ease,
+                    );
+                  },
+                ),
+                IconButton(
+                  icon: Icon(Icons.arrow_forward),
+                  onPressed: () {
+                    _pageController.nextPage(
+                      duration: Duration(milliseconds: 300),
+                      curve: Curves.ease,
+                    );
+                  },
+                ),
+              ],
+            ),
+          ],
         );
       },
     );
@@ -228,8 +257,7 @@ class ManageQuotes extends StatelessWidget {
                   IconButton(
                     icon: Icon(Icons.edit),
                     onPressed: () {
-                      _editQuote(
-                          context, document.id, data['text'], data['author']);
+                      _editQuote(context, document.id, data['text'], data['author']);
                     },
                   ),
                   IconButton(
@@ -252,8 +280,7 @@ class ManageQuotes extends StatelessWidget {
 
   void _editQuote(BuildContext context, String id, String text, String author) {
     TextEditingController textController = TextEditingController(text: text);
-    TextEditingController authorController =
-        TextEditingController(text: author);
+    TextEditingController authorController = TextEditingController(text: author);
     showDialog(
       context: context,
       builder: (BuildContext context) {
@@ -275,7 +302,10 @@ class ManageQuotes extends StatelessWidget {
           actions: [
             ElevatedButton(
               onPressed: () {
-                FirebaseFirestore.instance.collection('quotes').doc(id).update({
+                FirebaseFirestore.instance
+                    .collection('quotes')
+                    .doc(id)
+                    .update({
                   'text': textController.text,
                   'author': authorController.text,
                 });
