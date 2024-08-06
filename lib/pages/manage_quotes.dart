@@ -1,17 +1,15 @@
 import 'package:flutter/material.dart'; // מייבא את חבילת Flutter Material לעיצוב ממשק המשתמש.
-import 'package:cloud_firestore/cloud_firestore.dart'; // מייבא את חבילת Cloud Firestore לשימוש במסד הנתונים של Firebase.
-
 import '../quote_app.dart'; // מייבא את קובץ quote_app.dart שנמצא בתיקיית ה-parent.
+import '../repositorys/repository_quotes.dart'; // מייבא את קובץ quotes_repository.dart שנמצא בתיקיית ה-parent.
 
 class ManageQuotes extends StatelessWidget { // מגדיר ווידג'ט Stateless לניהול הציטוטים.
-  final Stream<QuerySnapshot> _quotesStream =
-      FirebaseFirestore.instance.collection('quotes').snapshots(); // זורם נתונים של אוסף הציטוטים מ-Firestore.
+  final QuotesRepository quotesRepository = QuotesRepository(); // יוצר מופע של המחלקה QuotesRepository.
 
   @override
   Widget build(BuildContext context) {
-    return StreamBuilder<QuerySnapshot>(
-      stream: _quotesStream, // משתמש בזרם הנתונים של הציטוטים.
-      builder: (BuildContext context, AsyncSnapshot<QuerySnapshot> snapshot) {
+    return StreamBuilder<List<Quote>>(
+      stream: quotesRepository.getQuotes(), // משתמש בזרם הנתונים של הציטוטים.
+      builder: (BuildContext context, AsyncSnapshot<List<Quote>> snapshot) {
         if (snapshot.hasError) {
           return Text('Something went wrong'); // מציג הודעת שגיאה אם יש בעיה בזרם הנתונים.
         }
@@ -21,28 +19,23 @@ class ManageQuotes extends StatelessWidget { // מגדיר ווידג'ט Statele
         }
 
         return ListView(
-          children: snapshot.data!.docs.map((DocumentSnapshot document) { // ממפה כל מסמך בזרם הנתונים לרשימת ווידג'טים.
-            Map<String, dynamic> data =
-                document.data()! as Map<String, dynamic>; // ממיר את הנתונים ממסמך למפה.
+          children: snapshot.data!.map((Quote quote) { // ממפה כל ציטוט בזרם הנתונים לרשימת ווידג'טים.
             return ListTile(
-              title: Text(data['text']), // מציג את טקסט הציטוט ככותרת.
-              subtitle: Text(data['author']), // מציג את שם המחבר כתת-כותרת.
+              title: Text(quote.text), // מציג את טקסט הציטוט ככותרת.
+              subtitle: Text(quote.author), // מציג את שם המחבר כתת-כותרת.
               trailing: Row(
                 mainAxisSize: MainAxisSize.min, // מתאים את השורה למינימום רוחב שנדרש.
                 children: [
                   IconButton(
                     icon: Icon(Icons.edit), // כפתור עריכה.
                     onPressed: () {
-                      _editQuote(context, document.id, data['text'], data['author']); // מפעיל את הפונקציה לעריכת הציטוט.
+                      _editQuote(context, quote); // מפעיל את הפונקציה לעריכת הציטוט.
                     },
                   ),
                   IconButton(
                     icon: Icon(Icons.delete), // כפתור מחיקה.
                     onPressed: () {
-                      FirebaseFirestore.instance
-                          .collection('quotes')
-                          .doc(document.id)
-                          .delete(); // מוחק את הציטוט מהאוסף ב-Firestore.
+                      quotesRepository.deleteQuote(quote.id); // מוחק את הציטוט מהאוסף ב-Firestore.
                     },
                   ),
                 ],
@@ -54,9 +47,9 @@ class ManageQuotes extends StatelessWidget { // מגדיר ווידג'ט Statele
     );
   }
 
-  void _editQuote(BuildContext context, String id, String text, String author) { // פונקציה לעריכת הציטוט.
-    TextEditingController textController = TextEditingController(text: text); // שדה טקסט לעריכת טקסט הציטוט.
-    TextEditingController authorController = TextEditingController(text: author); // שדה טקסט לעריכת שם המחבר.
+  void _editQuote(BuildContext context, Quote quote) { // פונקציה לעריכת הציטוט.
+    TextEditingController textController = TextEditingController(text: quote.text); // שדה טקסט לעריכת טקסט הציטוט.
+    TextEditingController authorController = TextEditingController(text: quote.author); // שדה טקסט לעריכת שם המחבר.
     final _formKey = GlobalKey<FormState>(); // מפתח גלובלי לניהול מצב הטופס.
     showDialog(
       context: context,
@@ -95,13 +88,7 @@ class ManageQuotes extends StatelessWidget { // מגדיר ווידג'ט Statele
             ElevatedButton(
               onPressed: () {
                 if (_formKey.currentState!.validate()) { // בודק אם הטופס תקין.
-                  FirebaseFirestore.instance
-                      .collection('quotes')
-                      .doc(id)
-                      .update({
-                    'text': textController.text,
-                    'author': authorController.text,
-                  }); // מעדכן את הציטוט ב-Firestore.
+                  quotesRepository.updateQuote(quote.id, authorController.text, textController.text); // מעדכן את הציטוט ב-Firestore.
                   Navigator.of(context).pop(); // סוגר את הדיאלוג.
                 }
               },

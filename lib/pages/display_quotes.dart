@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart'; // מייבא את חבילת Flutter Material לעיצוב ממשק המשתמש.
-import 'package:cloud_firestore/cloud_firestore.dart'; // מייבא את חבילת Cloud Firestore לשימוש במסד הנתונים של Firebase.
+import '../repositorys/repository_quotes.dart';
 
 class DisplayQuotes extends StatefulWidget { // מגדיר ווידג'ט Stateful להצגת הציטוטים.
   @override
@@ -8,14 +8,13 @@ class DisplayQuotes extends StatefulWidget { // מגדיר ווידג'ט Statefu
 
 class _DisplayQuotesState extends State<DisplayQuotes> {
   final PageController _pageController = PageController(); // בקר לדפדוף בין הדפים.
-  final Stream<QuerySnapshot> _quotesStream =
-      FirebaseFirestore.instance.collection('quotes').snapshots(); // זורם נתונים של אוסף הציטוטים מ-Firestore.
+  final QuotesRepository quotesRepository = QuotesRepository(); // יוצר מופע של המחלקה QuotesRepository.
 
   @override
   Widget build(BuildContext context) {
-    return StreamBuilder<QuerySnapshot>(
-      stream: _quotesStream, // משתמש בזרם הנתונים של הציטוטים.
-      builder: (BuildContext context, AsyncSnapshot<QuerySnapshot> snapshot) {
+    return StreamBuilder<List<Quote>>(
+      stream: quotesRepository.getQuotes(), // משתמש בזרם הנתונים של הציטוטים.
+      builder: (BuildContext context, AsyncSnapshot<List<Quote>> snapshot) {
         if (snapshot.hasError) {
           return Text('Something went wrong'); // מציג הודעת שגיאה אם יש בעיה בזרם הנתונים.
         }
@@ -29,21 +28,18 @@ class _DisplayQuotesState extends State<DisplayQuotes> {
             Expanded(
               child: PageView(
                 controller: _pageController, // משתמש בבקר לדפדוף בין הדפים.
-                children:
-                    snapshot.data!.docs.map((DocumentSnapshot document) { // ממפה כל מסמך בזרם הנתונים לרשימת ווידג'טים.
-                  Map<String, dynamic> data =
-                      document.data()! as Map<String, dynamic>; // ממיר את הנתונים ממסמך למפה.
+                children: snapshot.data!.map((Quote quote) { // ממפה כל ציטוט בזרם הנתונים לרשימת ווידג'טים.
                   return Center(
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center, // מרכז את התוכן אנכית.
                       children: [
                         Text(
-                          data['text'], // מציג את טקסט הציטוט.
+                          quote.text, // מציג את טקסט הציטוט.
                           style: TextStyle(fontSize: 24),
                         ),
                         SizedBox(height: 10), // מוסיף רווח אנכי של 10 פיקסלים.
                         Text(
-                          data['author'], // מציג את שם המחבר.
+                          quote.author, // מציג את שם המחבר.
                           style: TextStyle(fontSize: 18, color: Colors.grey),
                         ),
                       ],
